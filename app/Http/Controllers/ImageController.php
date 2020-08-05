@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Image;
 use App\CropImage;
+use Illuminate\Support\Facades\Validator;
 
 class ImageController extends Controller
 {
@@ -94,48 +95,22 @@ class ImageController extends Controller
         }
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function show($id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function edit($id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy($id)
-    {
-        //
+    public function getImages($id = null, $part = null) {
+        $rules = Validator::make(['id' => $id, 'part' => $part], [
+            'id' => 'nullable|integer|exists:crop_images,id',
+            'part' => 'nullable|integer|min:1|max:4'
+        ]);     
+        if ($rules->fails()) {
+            return response()->json($rules->failed(), 423);
+        }                    
+        if ($id != null) {
+            $image = CropImage::find($id);
+            if ($part != null) {
+                $croped_img = \json_decode($image->croped_img)[$part-1];                
+                return Image::make(public_path($croped_img))->response();
+            }
+            return Image::make(public_path($image->full_img))->response();
+        }
+        return response()->json(CropImage::all(), 200);
     }
 }
