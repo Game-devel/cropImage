@@ -2,161 +2,121 @@
 
 @section('content')
 <div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-           
-            <div id="wrapper">
-                <h1>jQuery Select Areas Plugin Demos</h1>
-    
-                <div class="image-decorator">
-                    <img alt="Image principale" id="example" src="/images/example.jpg"/>
-                </div>
-                <table>
-                    <tr>
-                        <td class="actions">
-                            <input type="button" id="btnView" value="Display areas" class="actionOn" />
-                            <input type="button" id="btnViewRel" value="Display relative" class="actionOn" />
-                            <input type="button" id="btnNew" value="Add New" class="actionOn" />
-                            <input type="button" id="btnNews" value="Add 2 New" class="actionOn" />
-                            <input type="button" id="btnReset" value="Reset" class="actionOn" />
-                            <input type="button" id="btnDestroy" value="Destroy" class="actionOn" />
-                            <input type="button" id="btnCreate" value="Create" class="actionOff" />
-                        </td>
-                        <td>
-                            <div id="output" class='output'> </div>
-                        </td>
-                    </tr>
-                </table>
+    <div class="row justify-content-center">        
+        <div class="col-md-10">
+            @if(Session::has('message'))
+                <p class="alert alert-info">{{ Session::get('message') }}</p>
+            @endif
+            <div id="wrapper">                     
+                <form enctype="multipart/form-data" action="{{ Route('store') }}" method="post">
+                    @csrf
+                    <div class="form-group">
+                        <label for="image" class="col-md-4 col-form-label text-md-left">Загрузите картинку</label>  
+                        <div class="col-md-12">
+                          <input id="image" type="file" class="@error('image') is-invalid @enderror" name="image" value="{{ old('image') }}" accept="image/*" autofocus>
+                        </div>
+                        @error('image')
+                          <span style="display: block;" class="invalid-feedback" role="alert">
+                            <strong>{{ $message }}</strong>
+                          </span>
+                        @enderror
+                    </div>
+                    <input type="hidden" name="positions" id="positions">
+                    <div class="form-group text-right">  
+                        <div class="col-md-12">
+                            <input type="submit" name="submit" id="submit" class="btn btn-success" disabled value="Сохранить">
+                        </div>
+                    </div>
+                </form>
+                <div class="preview">
+                    <h3>Preview</h3>
+                    <span class="alert-info">Разделите картинку на 4 части</span>
+                    <div class="image-decorator">
+                        <img alt="Image principale" class="imagePreview" id="example" src="/images/example.jpg"/>
+                    </div>
+                    <h3>Example</h3>
+                    <div class="image-decorator">
+                        <img width="300" src="/images/example.jpg" alt="Example">
+                    </div>
+                </div>                
             </div>
 
             <script type="text/javascript">
-                $(document).ready(function () {                    
-                    $('img#example').selectAreas({
-                        minSize: [10, 10],
-                        onChanged: debugQtyAreas,
-                        maxAreas: 4,
-                        width: 500,
-                        areas: [
-                            {
-                                x: 10,
-                                y: 20,
-                                width: 60,
-                                height: 100,
-                            }                            
-                        ]
-                    });                    
-                    $('#btnView').click(function () {
-                        var areas = $('img#example').selectAreas('areas');
-                        displayAreas(areas);
-                    });
-                    $('#btnViewRel').click(function () {
-                        var areas = $('img#example').selectAreas('relativeAreas');
-                        displayAreas(areas);
-                    });
-                    $('#btnReset').click(function () {
-                        output("reset")
-                        $('img#example').selectAreas('reset');
-                    });
-                    $('#btnDestroy').click(function () {
-                        $('img#example').selectAreas('destroy');
-    
-                        output("destroyed")
-                        $('.actionOn').attr("disabled", "disabled");
-                        $('.actionOff').removeAttr("disabled")
-                    });
-                    $('#btnCreate').attr("disabled", "disabled").click(function () {
-                        $('img#example').selectAreas({
-                            minSize: [10, 10],
-                            onChanged : debugQtyAreas,
-                            maxAreas: 4,
-                            width: 500,
-                        });
-    
-                        output("created")
-                        $('.actionOff').attr("disabled", "disabled");
-                        $('.actionOn').removeAttr("disabled")
-                    });
-                    $('#btnNew').click(function () {
-                        var areaOptions = {
-                            x: Math.floor((Math.random() * 200)),
-                            y: Math.floor((Math.random() * 200)),
-                            width: Math.floor((Math.random() * 100)) + 50,
-                            height: Math.floor((Math.random() * 100)) + 20,
-                        };
-                        output("Add a new area: " + areaToString(areaOptions))
-                        $('img#example').selectAreas('add', areaOptions);
-                    });
-                    $('#btnNews').click(function () {
-                        var areaOption1 = {
-                            x: Math.floor((Math.random() * 200)),
-                            y: Math.floor((Math.random() * 200)),
-                            width: Math.floor((Math.random() * 100)) + 50,
-                            height: Math.floor((Math.random() * 100)) + 20,
-                        }, areaOption2 = {
-                            x: areaOption1.x + areaOption1.width + 10,
-                            y: areaOption1.y + areaOption1.height - 20,
-                            width: 50,
-                            height: 20,
-                        };
-                        output("Add a new area: " + areaToString(areaOption1) + " and " + areaToString(areaOption2))
-                        $('img#example').selectAreas('add', [areaOption1, areaOption2]);
-                    });
+                $(document).ready(function () {  
+                    var _URL = window.URL || window.webkitURL;
+                    $('#image').change(function() {                        
+                        if (this.files) $.each(this.files, readAndPreview);                        
+                        function readAndPreview(i, file) {
+                            if (!/\.(jpe?g|png|gif|svg)$/i.test(file.name)) {
+                                return alert(file.name + " Это не картинка!");
+                            }
+
+                            var reader = new Image();                            
+                            $('img#example').attr('src', _URL.createObjectURL(file))
+                            reader.onload = function () {                                
+                                _URL.revokeObjectURL(objectUrl);
+                            };                                                        
+                                                    
+                            $('.preview').css('display', 'block');
+                            $('img#example').selectAreas('destroy');                                               
+                            $('img#example').selectAreas({
+                                minSize: [10, 10],
+                                onChanged: debugQtyAreas,
+                                maxAreas: 4                                
+                            });                            
+                        }                                                                    
+                    })                                        
                 });
-    
-                var selectionExists;
-    
-                function areaToString (area) {
-                    return (typeof area.id === "undefined" ? "" : (area.id + ": ")) + area.x + ':' + area.y  + ' ' + area.width + 'x' + area.height + '<br />'
-                }
-    
-                function output (text) {
-                    $('#output').html(text);
-                }
-    
+                
                 // Log the quantity of selections
                 function debugQtyAreas (event, id, areas) {
-                    console.log(areas.length + " areas", arguments);
-                };
-    
-                // Display areas coordinates in a div
-                function displayAreas (areas) {
-                    var text = "";
-                    $.each(areas, function (id, area) {
-                        text += areaToString(area);
-                    });
-                    output(text);
-                };
-    
+                    console.log(areas.length + " areas", arguments); 
+                    if (areas.length == 4) {
+                        $('#submit').prop('disabled', false)
+                    }                    
+                };    
+
+                $('#submit').click(function(e) {                    
+                    var positions = JSON.stringify($('img#example').selectAreas('areas'));
+                    console.log(positions)
+                    $('#positions').val(positions)
+                })                
             </script>
             
-            {{-- <table class="table">
+            <table class="table">
                 <thead>
                     <tr>
                         <th scope="col">#</th>
-                        <th scope="col">No</th>
-                        <th scope="col">Invoice data</th>
-                        <th scope="col">Supply</th>
-                        <th scope="col">Comment</th>
+                        <th scope="col">Name</th>
+                        <th scope="col">Path</th>
+                        <th scope="col">First Cut</th>
+                        <th scope="col">Second Cut</th>
+                        <th scope="col">Third Cut</th>
+                        <th scope="col">Fourth Cut</th>
                     </tr>
                 </thead>
                 <tbody>
                     @php
                         $count = 1;
                     @endphp
-                    @foreach ($invoices as $item)
+                    @foreach ($crop_images as $item)
                         <tr>
                             <th scope="row">{{ $count }}</th>
-                            <td>{{ $item->number }}</td>
-                            <td>{{ $item->invoice_date }}</td>
-                            <td>{{ $item->supply_date }}</td>
-                            <td>{{ $item->comment }}</td>
+                            <td>{{ $item->name_img }}</td>                            
+                            <td> <a target="_blank" href="{{ asset($item->full_img) }}">Open</a></td>
+                            @php
+                                $croped_img = json_decode($item->croped_img);
+                            @endphp
+                            @foreach ($croped_img as $crop)
+                                <td> <a target="_blank" href="{{ asset($crop) }}">Open</a></td>
+                            @endforeach
                         </tr>
                         @php
                             $count++;
                         @endphp
-                    @endforeach                    
+                    @endforeach
                 </tbody>
-            </table> --}}                            
+            </table>                            
         </div>
     </div>
 </div>

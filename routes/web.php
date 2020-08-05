@@ -11,4 +11,5 @@
 |
 */
 
-Route::resource('/', 'ImageController');
+Route::get('/', 'ImageController@index')->name('index');
+Route::post('/', 'ImageController@store')->name('store');

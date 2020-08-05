@@ -4,9 +4,17 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Image;
+use App\CropImage;
 
 class ImageController extends Controller
 {
+    protected function validator()
+    {
+        $rules = request()->validate([
+            'image' => 'required|image|max:5000|dimensions:min_width=100,min_height=100'
+        ]);
+        return $rules;
+    }
     /**
      * Display a listing of the resource.
      *
@@ -14,7 +22,10 @@ class ImageController extends Controller
      */
     public function index()
     {
-        return view('image');
+        $crop_images = CropImage::all();
+        return view('image', [
+            'crop_images' => $crop_images
+        ]);
     }
 
     /**
@@ -35,37 +46,51 @@ class ImageController extends Controller
      */
     public function store(Request $request)
     {
-        if($request->hasFile('profile_image')) {
+        if (!$this->validator()) {
+            return redirect()->route('index')->withErrors($this->validateRequest());
+        }
+        $positions = json_decode($request->positions) ?? [
+            ['id' => 0, 'x' => rand(10,100), 'y' => rand(10,100), 'width' => rand(10,100), 'height' => rand(10,100)],
+            ['id' => 1, 'x' => rand(10,100), 'y' => rand(10,100), 'width' => rand(10,100), 'height' => rand(10,100)],
+            ['id' => 2, 'x' => rand(10,100), 'y' => rand(10,100), 'width' => rand(10,100), 'height' => rand(10,100)],
+            ['id' => 3, 'x' => rand(10,100), 'y' => rand(10,100), 'width' => rand(10,100), 'height' => rand(10,100)]
+        ];
+        if($request->hasFile('image')) {
             //get filename with extension
-            $filenamewithextension = $request->file('profile_image')->getClientOriginalName();
+            $filenamewithextension = $request->file('image')->getClientOriginalName();
     
             //get filename without extension
             $filename = pathinfo($filenamewithextension, PATHINFO_FILENAME);
     
             //get file extension
-            $extension = $request->file('profile_image')->getClientOriginalExtension();
+            $extension = $request->file('image')->getClientOriginalExtension();
     
             //filename to store
             $filenametostore = $filename.'_'.time().'.'.$extension;
     
             //Upload File
-            $request->file('profile_image')->storeAs('public/profile_images', $filenametostore);
+            $request->file('image')->storeAs('public/images', $filenametostore);
     
-            if(!file_exists(public_path('storage/profile_images/crop'))) {
-                mkdir(public_path('storage/profile_images/crop'), 0755);
+            if(!file_exists(public_path('storage/images/crop'))) {
+                mkdir(public_path('storage/images/crop'), 0755);
             }
-    
-            // crop image
-            $img = Image::make(public_path('storage/profile_images/'.$filenametostore));
-            $croppath = public_path('storage/profile_images/crop/'.$filenametostore);
-    
-            $img->crop($request->input('w'), $request->input('h'), $request->input('x1'), $request->input('y1'));
-            $img->save($croppath);
-    
-            // you can save crop image path below in database
-            $path = asset('storage/profile_images/crop/'.$filenametostore);
-    
-            return redirect('image')->with(['success' => "Image cropped successfully.", 'path' => $path]);
+            $croped_img = [];
+            foreach ($positions as $position) {
+                // crop image
+                $img = Image::make(public_path('storage/images/'.$filenametostore));
+                $name = $filename.'_'.$position->id. '_'.time().'.'.$extension;
+                $croppath = public_path('storage/images/crop/'.$name);                
+                $img->crop(intval($position->width) ?? 0,intval($position->height) ?? 0, intval($position->x) ?? 0, intval($position->y) ?? 0);
+                $img->save($croppath);
+                array_push($croped_img, 'storage/images/crop/'.$name);
+            }
+            $crop_image = new CropImage();
+            CropImage::create([
+                'name_img' => $filename.'.'.$extension,
+                'full_img' => 'storage/images/'.$filenametostore,
+                'croped_img' => json_encode($croped_img)
+            ]);                            
+            return redirect()->route('index')->with(['success' => "Image cropped successfully."]);
         }
     }
 
