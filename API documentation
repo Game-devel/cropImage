@@ -1,0 +1,13 @@
+API Documentation
+
+route: /api/images
+method: get
+description: Возвращает список картинки.
+
+route: /api/images/{id?}
+method: get
+description: Возвращает часть целую картинки.
+
+route: /api/images/{id?}/{part?}
+method: get
+description: Возвращает часть обрезанной картинки.
