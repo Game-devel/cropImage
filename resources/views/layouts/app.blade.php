@@ -21,7 +21,8 @@
     <link href="http://www.jqueryscript.net/css/jquerysctipttop.css" rel="stylesheet" type="text/css">
     
     <script src="{{ asset('js/jquery-1.11.3.min.js') }}"></script>
-	<script src="{{ asset('js/jquery.selectareas.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('js/jquery.selectareas.js') }}" type="text/javascript"></script>
+    <meta name="yandex-verification" content="fad914d308c33b46" />
 </head>
 <body>
     <div id="app">
